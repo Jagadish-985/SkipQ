@@ -1,0 +1,6 @@
+{
+  "name": "Q-Less Food Court",
+  "description": "A mobile-first food ordering solution for MNC food courts to eliminate queues. Features real-time status updates, UPI payment simulation, and a simplified kitchen dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

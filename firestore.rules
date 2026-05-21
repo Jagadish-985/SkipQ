@@ -1,0 +1,115 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- GLOBAL HELPERS ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isHandledByStaff() {
+      // In a real MNC app, we'd check a staff collection. 
+      // For this demo, we allow all authenticated employees to act as staff for kitchen updates.
+      return isSignedIn();
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // --- MENU RULES ---
+    function isValidMenuProduct(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.price is number && data.price >= 0 &&
+             data.isVeg is bool &&
+             data.isAvailable is bool &&
+             (data.imageUrl == "" || data.imageUrl.size() < 1000);
+    }
+
+    match /menu/{productId} {
+      allow get: if true;
+      allow list: if true;
+      
+      allow create: if isHandledByStaff() && isValidMenuProduct(incoming()) &&
+                    incoming().keys().hasAll(['name', 'price', 'isVeg', 'isAvailable']) &&
+                    incoming().keys().size() >= 4;
+
+      allow update: if isHandledByStaff() && isValidMenuProduct(incoming());
+      allow delete: if isHandledByStaff();
+    }
+
+    // --- ORDER RULES ---
+    function isValidOrder(data) {
+      return data.userId == request.auth.uid &&
+             data.status in ['pending', 'accepted', 'preparing', 'cooked', 'picked_up'] &&
+             data.pickupCode is string && data.pickupCode.size() == 6 &&
+             data.totalAmount is number && data.totalAmount >= 0;
+    }
+
+    match /orders/{orderId} {
+      // Create: user must be signed in and own the order
+      allow create: if isSignedIn() && isValidOrder(incoming()) &&
+                    incoming().createdAt == request.time;
+
+      // Get: Owner or Staff
+      allow get: if isSignedIn() && (existing().userId == request.auth.uid || isHandledByStaff());
+      
+      // List: Explicitly check userId to satisfy client queries or allow staff access
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isHandledByStaff());
+
+      // Update: 
+      // 1. Staff can update status
+      // 2. User can potentially cancel (not implemented in UI but allowed for security)
+      allow update: if isSignedIn() && (
+        (isHandledByStaff() && incoming().diff(existing()).affectedKeys().hasAny(['status', 'updatedAt'])) ||
+        (existing().userId == request.auth.uid && incoming().status == 'cancelled' && existing().status == 'pending')
+      );
+
+      // Delete: Owner or Staff can delete active or cooked orders
+      allow delete: if isSignedIn() && (existing().userId == request.auth.uid || isHandledByStaff());
+    }
+
+    // --- SUBSCRIPTION RULES ---
+    function isValidSubscription(data) {
+      return data.itemId is string && data.itemId.size() <= 128 &&
+             data.itemName is string && data.itemName.size() > 0 && data.itemName.size() <= 100 &&
+             data.userId == request.auth.uid &&
+             data.userEmail is string && data.userEmail.size() > 0 &&
+             data.status in ['pending', 'notified'];
+    }
+
+    match /menu_subscriptions/{subscriptionId} {
+      allow create: if isSignedIn() && isValidSubscription(incoming()) &&
+                    incoming().createdAt == request.time;
+      allow get, list, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isHandledByStaff());
+      allow update: if isSignedIn() && isHandledByStaff();
+    }
+
+    // --- USER NOTIFICATION RULES ---
+    function isValidNotification(data) {
+      return data.userId is string && data.userId.size() <= 128 &&
+             data.message is string && data.message.size() > 0 &&
+             data.read is bool;
+    }
+
+    match /user_notifications/{notificationId} {
+      allow create: if isSignedIn() && (incoming().userId == request.auth.uid || isHandledByStaff()) &&
+                    isValidNotification(incoming()) && incoming().createdAt == request.time;
+      allow get, list, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isHandledByStaff());
+      allow update: if isSignedIn() && existing().userId == request.auth.uid && 
+                    incoming().diff(existing()).affectedKeys().hasOnly(['read']);
+    }
+  }
+}

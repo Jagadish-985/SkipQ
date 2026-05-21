@@ -1,0 +1,82 @@
+{
+  "entities": {
+    "MenuProduct": {
+      "title": "Menu Product",
+      "description": "A food item available for order",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string" },
+        "isVeg": { "type": "boolean" },
+        "isAvailable": { "type": "boolean" },
+        "imageUrl": { "type": "string" }
+      },
+      "required": ["name", "price", "isVeg", "isAvailable"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "A customer order",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "items": { "type": "array" },
+        "totalAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "preparing", "cooked", "picked_up"] },
+        "pickupCode": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "items", "totalAmount", "status", "pickupCode", "createdAt"]
+    },
+    "MenuSubscription": {
+      "title": "Menu Subscription",
+      "description": "Subscription to notify when an item is back in stock",
+      "type": "object",
+      "properties": {
+        "itemId": { "type": "string" },
+        "itemName": { "type": "string" },
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "userName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["pending", "notified"] }
+      },
+      "required": ["itemId", "itemName", "userId", "userEmail", "createdAt", "status"]
+    },
+    "UserNotification": {
+      "title": "User Notification",
+      "description": "In-app notification for back-in-stock alerts",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "itemId": { "type": "string" },
+        "itemName": { "type": "string" },
+        "message": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "message", "read", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/menu/{productId}": {
+      "schema": "MenuProduct",
+      "description": "Food court menu items"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Customer orders"
+    },
+    "/menu_subscriptions/{subscriptionId}": {
+      "schema": "MenuSubscription",
+      "description": "User subscriptions for menu availability"
+    },
+    "/user_notifications/{notificationId}": {
+      "schema": "UserNotification",
+      "description": "User notifications inbox"
+    }
+  }
+}
