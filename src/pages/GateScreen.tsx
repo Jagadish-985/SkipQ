@@ -79,9 +79,9 @@ export default function GateScreen({
       >
         <div className="flex flex-col items-center">
           <div className="w-16 h-16 bg-orange-500 rounded-2xl flex items-center justify-center text-white font-black text-3xl shadow-2xl shadow-orange-200 mb-6">
-            Q
+            S
           </div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase mb-1">QuickBite MNC</h1>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase mb-1">SkipQ</h1>
           <p className="text-[10px] font-black text-orange-500 uppercase tracking-[0.3em]">Smart Food Court v2.0</p>
         </div>
         
